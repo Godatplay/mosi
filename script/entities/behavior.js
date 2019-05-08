@@ -110,6 +110,13 @@ let Behavior = {
                 actionList: []
             }
         }
+        else if (type === 'cycle') {
+        		action = {
+        				type,
+        				frequency: 1.0,
+								actionList: []
+        		}
+        }
         return action
     },
 

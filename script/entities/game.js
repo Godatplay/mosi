@@ -344,6 +344,11 @@ class Game {
                     }
                 }
             }
+            else if (action.type === 'cycle') {
+            		let { frequency, actionList } = action
+
+								//
+            }
         }
 
         this.addToInventory = (item, quantity) => {

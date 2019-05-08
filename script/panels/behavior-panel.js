@@ -493,6 +493,37 @@ class BehaviorComponent extends Component {
         ]
     }
 
+    renderCycle() {
+    		let { action, updateAction, roomList, spriteList, colorList } = this.props
+
+    		let actionComponents = action.actionList.map((subAction, i) => {
+    				return h(BehaviorComponent, {
+    						updateAction: (newAction) => this.updateSubAction('actionList', i, newAction),
+    						removeAction: () => this.removeSubAction('actionList', i),
+    						action: subAction,
+    						roomList,
+    						spriteList,
+    						colorList
+    				})
+    		})
+
+    		let addActionButton = button({
+    				onclick: () => this.addSubAction('actionList')
+    		}, 'add action')
+
+    		return [
+            textbox({
+            		placeholder: 'frequency (sec)',
+            		value: action.frequency,
+            		onchange: e => updateAction({ frequency: e.target.value })
+            }),
+						div({ className: 'behaviorList' }, [
+                actionComponents,
+                addActionButton
+						])
+    		]
+    }
+
     render({
         updateAction,
         removeAction,
@@ -514,7 +545,8 @@ class BehaviorComponent extends Component {
             option({ value: 'remove_self' }, 'remove self'),
             option({ value: 'trigger_event' }, 'trigger event'),
             option({ value: 'sequence' }, 'sequence'),
-            option({ value: 'conditional' }, 'conditional')
+            option({ value: 'conditional' }, 'conditional'),
+						option({ value: 'cycle' }, 'cycle')
         ])
 
         let removeButton = button({
@@ -557,6 +589,9 @@ class BehaviorComponent extends Component {
         }
         else if (action.type === 'conditional') {
             actionSettings = this.renderConditional()
+        }
+        else if (action.type === 'cycle') {
+						actionSettings = this.renderCycle()
         }
 
         return div({
