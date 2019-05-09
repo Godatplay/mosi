@@ -114,6 +114,7 @@ let Behavior = {
         		action = {
         				type,
         				frequency: 1.0,
+        				isLooping: true,
 								actionList: []
         		}
         }

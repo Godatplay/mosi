@@ -496,6 +496,17 @@ class BehaviorComponent extends Component {
     renderCycle() {
     		let { action, updateAction, roomList, spriteList, colorList } = this.props
 
+    		let freqInput = textbox({
+    				placeholder: 'frequency (sec)',
+    				value: action.frequency,
+    				onchange: e => updateAction({ frequency: e.target.value })
+    		})
+
+    		let loopButton = button({
+    				className: 'toggle' + (action.isLooping ? ' selected' : ''),
+    				onclick: () => updateAction({ isLooping: !action.isLooping })
+    		}, 'loop')
+
     		let actionComponents = action.actionList.map((subAction, i) => {
     				return h(BehaviorComponent, {
     						updateAction: (newAction) => this.updateSubAction('actionList', i, newAction),
@@ -512,11 +523,10 @@ class BehaviorComponent extends Component {
     		}, 'add action')
 
     		return [
-            textbox({
-            		placeholder: 'frequency (sec)',
-            		value: action.frequency,
-            		onchange: e => updateAction({ frequency: e.target.value })
-            }),
+            row([
+								freqInput,
+								loopButton
+						]),
 						div({ className: 'behaviorList' }, [
                 actionComponents,
                 addActionButton

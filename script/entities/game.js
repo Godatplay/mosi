@@ -345,13 +345,15 @@ class Game {
                 }
             }
             else if (action.type === 'cycle') {
-            		let { frequency, actionList } = action
+            		let { isLooping, frequency, actionList } = action
 								var self = this
 								
             		async function cycleAction() {
             				for (let a = 0; a < actionList.length; ++a) {
             						self.runAction({ action: actionList[a], tile, tempPosition, id: id + '-' + a });
             						await new Promise(resolve => setTimeout(() => resolve(), Number(frequency * 1000)));
+
+            						if (isLooping && a == actionList.length - 1) a = -1;
             				}
             		}
 								cycleAction()
