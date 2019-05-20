@@ -15,6 +15,15 @@ class Game {
         this.wrapper.appendChild(this.canvas)
         this.context = this.canvas.getContext('2d')
 
+        this.dialog = new Text({
+            fontData: world.fontData,
+            fontDirection: world.fontDirection,
+            wrapper: this.wrapper,
+            padding: Math.floor(world.spriteWidth * world.fontResolution),
+            width: world.roomWidth * world.spriteWidth * world.fontResolution,
+            height: world.roomHeight * world.spriteHeight * world.fontResolution
+        })
+
         this.frameRate = 400
 
         this.begin = () => {
@@ -36,7 +45,7 @@ class Game {
 
             // initialize dialog variables
             this.showDialog = false
-            this.dialog = null
+            this.delayedActions = []
 
             // get starting room
             this.moveRooms(this.startingRoom())
@@ -209,24 +218,26 @@ class Game {
             
             // check for tile interactions
             let roomIndex = (roomY * worldWidth) + roomX
-            let room = roomList[roomIndex]
             let tempPosition = { roomIndex, x, y }
-            let tileIsClear = this.checkTiles(room, tempPosition)
+            let tileIsClear = this.checkTiles(roomIndex, tempPosition)
             if (!tileIsClear) stopMoving = true
+
+            // remove tiles
+            roomList.forEach(r => {
+                r.tileList = r.tileList.filter(tile => !tile.removeMe)
+            })
 
             // finalize avatar movement
             if (!stopMoving) {
                 this.avatarX = tempPosition.x
                 this.avatarY = tempPosition.y
-                room.tileList = room.tileList.filter(tile => !tile.removeMe)
                 if (tempPosition.roomIndex !== this.currentRoomIndex) this.moveRooms(tempPosition.roomIndex)
-            } else {
-                room.tileList.forEach(tile => { tile.removeMe = false })
             }
         }
 
-        this.checkTiles = (room, tempPosition) => {
-            let { spriteList } = this.world
+        this.checkTiles = (roomIndex, tempPosition) => {
+            let { spriteList, roomList } = this.world
+            let room = roomList[roomIndex]
             let tileIsClear = true
             room.tileList.forEach(tile => {
                 if (tile.x !== tempPosition.x || tile.y !== tempPosition.y) return
@@ -246,7 +257,7 @@ class Game {
                     let pushBehavior = sprite.behaviorList.find(b => b.event === 'push')
                     if (pushBehavior) {
                         pushBehavior.actionList.forEach((action, i) => {
-                            this.runAction({ action, tile, tempPosition, id: 'push-' + i })
+                            this.runAction({ action, tile, tempPosition, id: 'push-' + i, roomIndex })
                         })
                     }
                 }
@@ -254,10 +265,17 @@ class Game {
             return tileIsClear
         }
 
-        this.runAction = ({ action, tile, tempPosition, id }) => {
+        this.runAction = ({ action, tile, tempPosition, id, roomIndex }) => {
             let { roomHeight, roomList, spriteList, paletteList } = this.world
-            let room = roomList[tempPosition.roomIndex]
+            if (window.DEBUG === true) console.log(`${action.type.toUpperCase()} action (room ${roomIndex}, tile ${tile.x}×${tile.y})`)
 
+            if (this.showDialog) {
+                this.delayedActions.push(
+                    this.runAction.bind(this, { action, tile, tempPosition, id, roomIndex })
+                )
+                return
+            }
+            
             if (action.type === 'dialog') {
                 let displayAtBottom = tempPosition.y < roomHeight / 2
                 this.beginDialog(action.text, displayAtBottom)
@@ -283,14 +301,17 @@ class Game {
                 tile.removeMe = true
             }
             else if (action.type === 'trigger_event') {
-                room.tileList.forEach(t => {
-                    let s = spriteList.find(s => s.name === t.spriteName)
-                    let eventBehavior = s.behaviorList.find(b => b.event === action.eventName)
-                    if (eventBehavior) {
-                        eventBehavior.actionList.forEach((a, i) => {
-                            this.runAction({ action: a, tile: t, tempPosition, id: action.eventName + '-' + i })
-                        })
-                    }
+                roomList.forEach((r, ri) => {
+                    r.tileList.forEach(t => {
+                        let s = spriteList.find(s => s.name === t.spriteName)
+                        let eventBehavior = s.behaviorList.find(b => b.event === action.eventName)
+                        if (eventBehavior) {
+                            eventBehavior.actionList.forEach((a, i) => {
+                                if (a.type === 'trigger_event' && a.eventName === action.eventName) return // don't re-trigger the same event
+                                this.runAction({ action: a, tile: t, tempPosition, id: action.eventName + '-' + i, roomIndex: ri })
+                            })
+                        }
+                    })
                 })
             }
             else if (action.type === 'conditional') {
@@ -303,7 +324,7 @@ class Game {
                     (comparison === '>' && numItems > quantity) ||
                     (comparison === '>=' && numItems >= quantity)
                 ) {
-                    actionList.forEach((a, i) => this.runAction({ action: a, tile, tempPosition, id: id + '-' + i }))
+                    actionList.forEach((a, i) => this.runAction({ action: a, tile, tempPosition, id: id + '-' + i, roomIndex }))
                 }
             }
             else if (action.type === 'sequence') {
@@ -331,7 +352,7 @@ class Game {
                 // run current action
                 let i = tile.seqOrderList[id][tile.seqIndexList[id]]
                 let a = actionList[i]
-                this.runAction({ action: a, tile, tempPosition, id: id + '-' + i })
+                this.runAction({ action: a, tile, tempPosition, id: id + '-' + i, roomIndex })
 
                 // get next action
                 tile.seqIndexList[id]++
@@ -470,25 +491,19 @@ class Game {
         }
 
         this.beginDialog = (string, displayAtBottom) => {
-            let { roomWidth, roomHeight, spriteWidth, spriteHeight, fontData, fontResolution, fontDirection } = this.world
             this.showDialog = true
-            this.dialog = new Text({
-                string,
-                fontData: fontData,
-                fontDirection: fontDirection,
-                wrapper: this.wrapper,
-                padding: Math.floor(spriteWidth * fontResolution),
-                width: roomWidth * spriteWidth * fontResolution,
-                height: roomHeight * spriteHeight * fontResolution,
-                displayAtBottom
-            })
-            this.dialog.begin()
+            this.dialog.begin(string, displayAtBottom)
             this.pointerIsDown = false
         }
 
         this.endDialog = () => {
             this.showDialog = false
             this.dialog.end()
+
+            while (this.delayedActions.length > 0 && !this.showDialog) {
+                let runDelayedAction = this.delayedActions.shift()
+                runDelayedAction()
+            }
         }
 
         this.addEventListeners = () => {
