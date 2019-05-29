@@ -293,9 +293,43 @@ class Game {
                 this.cacheSprite(newSprite, colorList)
             }
             else if (action.type === 'move_avatar') {
-                tempPosition.roomIndex = action.roomIndex
-                tempPosition.x = action.tileX
-                tempPosition.y = action.tileY
+								let { roomIndex, tileX, tileY, isRelative, direction } = action
+								if (!isRelative) {
+										tempPosition.roomIndex = roomIndex
+										tempPosition.x = tileX
+										tempPosition.y = tileY
+								}
+								else {
+										async function waitThenDoKeyUp(e) {
+												await new Promise(resolve => setTimeout(() => resolve(e), 15.0));
+												document.dispatchEvent(e);
+										}
+
+										if (direction === 'left') {
+												var e = new KeyboardEvent("keydown", {'key':'ArrowLeft'});
+												document.dispatchEvent(e);
+												e = new KeyboardEvent("keyup", {'key': 'ArrowLeft'});
+												waitThenDoKeyUp(e);
+										}
+										else if (direction === 'right') {
+												var e = new KeyboardEvent("keydown", {'key':'ArrowRight'});
+												document.dispatchEvent(e);
+												e = new KeyboardEvent("keyup", {'key':'ArrowRight'});
+												waitThenDoKeyUp(e);
+										}
+										else if (direction === 'up') {
+												var e = new KeyboardEvent("keydown", {'key':'ArrowUp'});
+												document.dispatchEvent(e);
+												e = new KeyboardEvent("keyup", {'key':'ArrowUp'});
+												waitThenDoKeyUp(e);
+										}
+										else if (direction === 'down') {
+												var e = new KeyboardEvent("keydown", {'key':'ArrowDown'});
+												document.dispatchEvent(e);
+												e = new KeyboardEvent("keyup", {'key':'ArrowDown'});
+												waitThenDoKeyUp(e);
+										}
+								}
             }
             else if (action.type === 'remove_self') {
                 tile.removeMe = true

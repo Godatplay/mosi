@@ -111,11 +111,11 @@ class BehaviorPanel extends Component {
             onclick: () => addAction(currentBehavior.event)
         }, 'add action')
 
-        if (sprite.isAvatar) {
-            return panel({ header: 'behaviors', closeTab }, [
-                div({}, 'avatar behavior is controlled by the player')
-            ])
-        }
+        //if (sprite.isAvatar) {
+        //    return panel({ header: 'behaviors', closeTab }, [
+        //        div({}, 'avatar behavior is controlled by the player')
+        //    ])
+        //}
 
         return panel({ header: 'behaviors', closeTab }, [
             row([
@@ -304,7 +304,7 @@ class BehaviorComponent extends Component {
     }
 
     renderMoveAvatar() {
-        let { action, roomList } = this.props
+        let { action, updateAction, roomList } = this.props
         let room = roomList[action.roomIndex]
 
         let currentRoomButton = button({
@@ -315,20 +315,46 @@ class BehaviorComponent extends Component {
             onclick: () => this.setState({ showRoomOverlay: true })
         }, 'tile: ' + action.tileX + ', ' + action.tileY)
 
+        let relativeButton = button({
+        		className: 'toggle' + (action.isRelative ? ' selected' : ''),
+        		onclick: () => updateAction({ isRelative: !action.isRelative })
+        }, 'relative movement?')
+
+        let directionMenu = dropdown({
+        		value: action.direction,
+        		onchange: e => updateAction({ direction: e.target.value })
+        }, [
+            option({ value: 'left' }, 'move left'),
+            option({ value: 'right' }, 'move right'),
+            option({ value: 'up' }, 'move up'),
+            option({ value: 'down' }, 'move down'),
+        ])
+
         let worldOverlay = !this.state.showWorldOverlay ? null :
             this.worldOverlay(action.roomIndex, 'roomIndex')
 
         let roomOverlay = !this.state.showRoomOverlay ? null :
             this.roomOverlay(action.roomIndex, action.tileX, action.tileY, 'tileX', 'tileY')
 
-        return [
-            row([
-                currentRoomButton,
-                currentTileButton
-            ]),
-            worldOverlay,
-            roomOverlay
-        ]
+        if (!action.isRelative) {
+        		return [
+								row([
+										currentRoomButton,
+										currentTileButton
+								]),
+								relativeButton,
+								worldOverlay,
+								roomOverlay
+        		]
+        }
+        else {
+        		return [
+								row([directionMenu]),
+								relativeButton,
+								worldOverlay,
+								roomOverlay
+        		]
+        }
     }
 
     renderTransformSelf() {

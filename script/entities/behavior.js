@@ -79,7 +79,9 @@ let Behavior = {
                 type,
                 roomIndex: 0,
                 tileX: 0,
-                tileY: 0
+                tileY: 0,
+                isRelative: false,
+								direction: 'right'
             }
         }
         else if (type === 'remove_self') {
