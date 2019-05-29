@@ -26,6 +26,8 @@ class Game {
 
         this.frameRate = 400
 
+        this.isEnding = false
+
         this.begin = () => {
             let { spriteList } = this.world
 
@@ -50,6 +52,8 @@ class Game {
             // get starting room
             this.moveRooms(this.startingRoom())
 
+						this.isEnding = false
+
             // initialize event handling
             this.keyActive = false
             this.keyCodes = []
@@ -60,6 +64,7 @@ class Game {
         }
 
         this.end = () => {
+						this.isEnding = true
             this.removeEventListeners()
             window.cancelAnimationFrame(this.animationRequest)
         }
@@ -405,9 +410,11 @@ class Game {
 								
             		async function cycleAction() {
             				for (let a = 0; a < actionList.length; ++a) {
-            						self.runAction({ action: actionList[a], tile, tempPosition, id: id + '-' + a });
-            						await new Promise(resolve => setTimeout(() => resolve(), Number(frequency * 1000)));
+            						if (self.isEnding == true) return;
 
+            						self.runAction({ action: actionList[a], tile, tempPosition, id: id + '-' + a });
+            						let freq = Number(frequency);
+            						await new Promise(resolve => setTimeout(() => resolve(), Number(freq * 1000.0)));
             						if (isLooping && a == actionList.length - 1) a = -1;
             				}
             		}
