@@ -50,7 +50,7 @@ class RoomPanel extends Component {
         let paletteDropdown = dropdown({
             value: room.paletteName,
             onchange: e => setPaletteName(e.target.value)
-        }, paletteList
+        }, paletteList.slice()
             // sort alphabetically
             .sort((p1, p2) => {
                 let name1 = p1.name.toUpperCase()
@@ -174,6 +174,7 @@ class RoomPanel extends Component {
             drawTile: (x, y) => addTile(x, y, currentSpriteIndex),
             eraseTile: (x, y) => clearTile(x, y),
             isAnimated: true,
+            spriteIsTransparent: sprite.isTransparent,
             colorList
         })
 
